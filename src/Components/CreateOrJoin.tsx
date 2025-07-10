@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useSocket } from "../hooks/useSocket";
+// import { useSocket } from "../hooks/useSocket";
 
+interface JoinOrCreateRoomProps {
+  onSubmit: (data: { username: string; roomId: string; mode: "join" | "create" }) => void;
+}
 
-const JoinOrCreateRoom = ({ onSubmit }) => {
+const JoinOrCreateRoom = ({ onSubmit }: JoinOrCreateRoomProps) => {
   const [username, setUsername] = useState("");
   const [roomId, setRoomId] = useState("");
   const [mode, setMode] = useState("join"); // 'join' or 'create'
   const [error, setError] = useState(""); // Error state
   const [loading, setLoading] = useState(false); // Loading state
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!username || (mode === "join" && !roomId)) {

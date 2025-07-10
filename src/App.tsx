@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { useSocket } from './hooks/useSocket';
+import { useSession } from './hooks/useSession';
+
+
 import JoinOrCreateRoom from './Components/CreateOrJoin';
+import Alert from './Components/Alert';
 
 function App() {
-	const { messages, roomId, username, sendMessage, createRoom, joinRoom } = useSocket();
+	const { messages, roomId, username, errorMessage, sendMessage, createRoom, joinRoom, clearSession  } = useSocket();
+	const { sessionData,saveSession } = useSession();
 
 	const [roomCreated, setRoomCreated] = useState(false);
 	// const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -12,9 +17,46 @@ function App() {
 	// const [localUsername, setLocalUsername] = useState('');
 	// const [localRoomId, setLocalRoomId] = useState('');
 
+	const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+        if (errorMessage) {
+            setAlertMessage(errorMessage);
+            setShowAlert(true);
+        }
+    }, [errorMessage]);
+
+	useEffect(() => {
+        if (sessionData && sessionData.username && sessionData.roomId) {
+            setRoomCreated(true);
+        }
+    }, [sessionData]);
+
+	// Check for session in localStorage on component mount
+    useEffect(() => {
+        const saved = localStorage.getItem('chat_session');
+        if (saved) {
+            try {
+                const session = JSON.parse(saved);
+                if (session.expiresAt > Date.now()) {
+                    setRoomCreated(true);
+                }
+            } catch (error) {
+                console.error('Error parsing session:', error);
+				setAlertMessage('Failed to restore previous session');
+                setShowAlert(true);
+            }
+        }
+    }, []);
+
+	const handleCloseAlert = () => {
+        setShowAlert(false);
+        setAlertMessage('');
+    };
 
 	useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -32,6 +74,8 @@ function App() {
 		if (mode === 'create') {
 			// Create Room Logic
 			createRoom(username);
+			
+			
 			setRoomCreated(true); // Mark room as created
 		} else if (mode === 'join') {
 			// Join Room Logic
@@ -48,14 +92,28 @@ function App() {
 		inputRef.current.value = '';
 	}
 
+	function handleExit(){
+		clearSession()
+		setRoomCreated(false)
+	}
+
 	return (
 		<>
+			{/* Alert Component */}
+            <Alert 
+                message={alertMessage}
+                isVisible={showAlert}
+                onClose={handleCloseAlert}
+                autoCloseTime={5000}
+            />
+            
 			{roomCreated ? (
 				<div className="flex flex-col  bg-black text-white min-h-screen">
 					<div className="sticky top-0 left-0 w-full z-10 bg-zinc-950 opacity-90 px-4 py-2 backdrop-blur">
 						<div className="text-sm text-right p-4 ">
 							<h2 className="font-bold">User: {username}</h2>
 							<h2 className="font-bold">Room ID: {roomId}</h2>
+							<button className='bg-white text-black p-1 cursor-pointer' onClick={handleExit}>exitRoom</button>
 						</div>
 					</div>
 

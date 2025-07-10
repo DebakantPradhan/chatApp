@@ -1,4 +1,5 @@
 import { createRef, useEffect, useState } from "react";
+import { useSession } from "./useSession";
 
 interface userMessage {
 	messageType: 'join' | 'createRoom' | 'chat';
@@ -12,9 +13,27 @@ interface userMessage {
 export const useSocket = () => {
 
     const [socket,setSocket] = useState<WebSocket | null>(null)
+    
     const [roomId,setRoomId] = useState<string>('')
+    
     const [username,setUsername] = useState<string>('')
+    
     const [messages,setMessages] = useState<string[]>([]);
+    
+    const [errorMessage, setErrorMessage] = useState<string | null>(null); // Error message state
+
+    const {sessionData, saveSession, clearSession, loadSession } = useSession()
+
+    // Save session data to localStorage
+    // const saveSession = (username: string, roomId: string) => {
+    //     localStorage.setItem('chatSession', JSON.stringify({ username, roomId }));
+    // };
+
+    // Load session data from localStorage
+    // const loadSession = () => {
+    //     const session = localStorage.getItem('chatSession');
+    //     return session ? JSON.parse(session) : null;
+    // };
 
 	useEffect(() => {
 		const ws = new WebSocket('ws://localhost:8080');
@@ -22,6 +41,32 @@ export const useSocket = () => {
 		ws.onopen = () => {
             console.log('WebSocket connection established');
             setSocket(ws);
+
+            // Check if there is a saved session
+            
+
+            // Check if there is a saved session directly from localStorage
+            const saved = localStorage.getItem('chat_session');
+            if (saved) {
+                try {
+                    const session = JSON.parse(saved);
+                    if (session.expiresAt > Date.now()) {
+                        const { username, roomId } = session;
+                        setUsername(username);
+                        setRoomId(roomId);
+
+                        // Rejoin the room automatically
+                        ws.send(
+                            JSON.stringify({
+                                messageType: 'rejoin',
+                                payload: { username, roomId },
+                            })
+                        );
+                    }
+                } catch (error) {
+                    console.error('Error parsing session:', error);
+                }
+            }
         };
 
 
@@ -29,16 +74,21 @@ export const useSocket = () => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.messageType === 'connection') {
-                    setRoomId(data.payload.roomId || '');
+                    const serverRoomId = data.payload.roomId || '';
+                    setRoomId(serverRoomId);
+                    
                     console.log(`Room created: ${data.payload.roomId}`);
                 } else if (data.messageType === 'chat') {
                     setMessages((prev) => [...prev, data.payload.message || '']);
                 } else if (data.messageType === 'joined') {
                     console.log(`Joined room: ${data.payload.roomId}`);
                 } else if (data.messageType === 'error') {
+                    setErrorMessage(data.payload.message || 'An error occurred'); // Set error message
+
                     console.error(`Error: ${data.payload.message}`);
                 }
             } catch (error) {
+                setErrorMessage('Failed to parse WebSocket message'); // Set error message
                 console.error('Failed to parse WebSocket message:', error);
             }
         };
@@ -82,6 +132,8 @@ export const useSocket = () => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             setUsername(username);
             setRoomId(roomId);
+            saveSession(username, roomId);
+
             socket.send(
                 JSON.stringify({
                     messageType: 'join',
@@ -91,5 +143,5 @@ export const useSocket = () => {
         }
     };
 
-    return { socket, messages, roomId, username, sendMessage, createRoom, joinRoom };
+    return { socket, messages, roomId, username, errorMessage, sendMessage, createRoom, joinRoom, clearSession };
 };
