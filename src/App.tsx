@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { useSocket } from './hooks/useSocket';
 import JoinOrCreateRoom from './Components/CreateOrJoin';
-import ArrowDownRight from './icons/arrow-down-right';
 
 function App() {
 	const { messages, roomId, username, sendMessage, createRoom, joinRoom } = useSocket();
@@ -14,6 +13,12 @@ function App() {
 	// const [localRoomId, setLocalRoomId] = useState('');
 
 	const inputRef = useRef<HTMLInputElement | null>(null);
+
+	const messagesEndRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
 	const handleRoomSubmit = ({
 		username,
@@ -139,7 +144,7 @@ function App() {
 													className={`inline-block px-4 py-2 rounded-2xl max-w-full text-justify break-words ${
 														isOwnMessage
 															? 'bg-neutral-300 text-black rounded-br-sm'
-															: 'bg-neutral-950 text-white rounded-bl-sm'
+															: 'bg-neutral-800 text-white rounded-bl-sm'
 													}`}
 												>
 													{content}
@@ -150,9 +155,12 @@ function App() {
 								);
 							})
 						)}
+						<div ref={messagesEndRef} />
 					</div>
 
 					{/* Input message div */}
+					
+
 					<div className="fixed bottom-0 left-0 w-full z-10 bg-black opacity-90 px-4 py-4">
 						<div className="flex gap-2 max-w-4xl mx-auto">
 							<input
@@ -160,7 +168,12 @@ function App() {
 								type="text"
 								placeholder="Message..."
 								className="flex-1 bg-zinc-950 text-white border border-zinc-600 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-400" // FIX: Better responsive sizing
-								// onKeyDown={handleKeyDown} // ADD: Enter key support
+								onKeyDown={(e: React.KeyboardEvent) =>{
+									if (e.key === 'Enter' && !e.shiftKey && inputRef.current?.value !=null) {
+										e.preventDefault();
+										send();
+    								}
+								}} // ADD: Enter key support
 							/>
 							<button
 								className="bg-gray-200 hover:bg-gray-950 hover:text-white border border-zinc-600 px-4 py-2 rounded-md text-black transition-colors" // FIX: Better styling and white text
