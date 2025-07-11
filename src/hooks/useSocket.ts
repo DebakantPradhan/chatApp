@@ -1,4 +1,4 @@
-import { createRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "./useSession";
 
 interface userMessage {
@@ -10,6 +10,11 @@ interface userMessage {
 	};
 }
 
+interface Messages{
+    content: string,
+    timestamp: string,
+}
+
 export const useSocket = () => {
 
     const [socket,setSocket] = useState<WebSocket | null>(null)
@@ -18,9 +23,11 @@ export const useSocket = () => {
     
     const [username,setUsername] = useState<string>('')
     
-    const [messages,setMessages] = useState<string[]>([]);
+    const [messages,setMessages] = useState<Messages[]>([]);
     
     const [errorMessage, setErrorMessage] = useState<string | null>(null); // Error message state
+
+    const [roomCreated,setRoomCreated] = useState<boolean>(false)
 
     const {sessionData, saveSession, clearSession, loadSession } = useSession()
 
@@ -76,15 +83,23 @@ export const useSocket = () => {
                 if (data.messageType === 'connection') {
                     const serverRoomId = data.payload.roomId || '';
                     setRoomId(serverRoomId);
+                    const username = data.payload.username || ''
+                    setUsername(username);
+                    saveSession(username,serverRoomId)
                     
                     console.log(`Room created: ${data.payload.roomId}`);
                 } else if (data.messageType === 'chat') {
-                    setMessages((prev) => [...prev, data.payload.message || '']);
+                    const messageWithTimestamp = {
+						content: data.payload.message || '',
+						timestamp: data.payload.timestamp || new Date().toISOString(),
+					};
+                    setMessages((prev) => [...prev, messageWithTimestamp || '']);
                 } else if (data.messageType === 'joined') {
                     console.log(`Joined room: ${data.payload.roomId}`);
                 } else if (data.messageType === 'error') {
                     setErrorMessage(data.payload.message || 'An error occurred'); // Set error message
-
+                    setRoomCreated(false)
+                    clearSession()
                     console.error(`Error: ${data.payload.message}`);
                 }
             } catch (error) {
@@ -143,5 +158,5 @@ export const useSocket = () => {
         }
     };
 
-    return { socket, messages, roomId, username, errorMessage, sendMessage, createRoom, joinRoom, clearSession };
+    return { socket, messages, roomId, username, errorMessage,roomCreated, setRoomCreated, sendMessage, createRoom, joinRoom, clearSession };
 };

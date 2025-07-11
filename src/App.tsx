@@ -6,12 +6,14 @@ import { useSession } from './hooks/useSession';
 
 import JoinOrCreateRoom from './Components/CreateOrJoin';
 import Alert from './Components/Alert';
+import ExitIcon from './icons/ExitIcon';
+import ChatIcon from './icons/ChatIcon';
 
 function App() {
-	const { messages, roomId, username, errorMessage, sendMessage, createRoom, joinRoom, clearSession  } = useSocket();
+	const { messages, roomId, username, errorMessage, sendMessage, createRoom, joinRoom, clearSession, roomCreated,setRoomCreated  } = useSocket();
 	const { sessionData,saveSession } = useSession();
 
-	const [roomCreated, setRoomCreated] = useState(false);
+	// const [roomCreated, setRoomCreated] = useState(false);
 	// const [socket, setSocket] = useState<WebSocket | null>(null);
 	// const [messages, setMessages] = useState<string[]>([]);
 	// const [localUsername, setLocalUsername] = useState('');
@@ -95,6 +97,7 @@ function App() {
 	function handleExit(){
 		clearSession()
 		setRoomCreated(false)
+		window.location.reload();
 	}
 
 	return (
@@ -109,12 +112,24 @@ function App() {
             
 			{roomCreated ? (
 				<div className="flex flex-col  bg-black text-white min-h-screen">
-					<div className="sticky top-0 left-0 w-full z-10 bg-zinc-950 opacity-90 px-4 py-2 backdrop-blur">
-						<div className="text-sm text-right p-4 ">
-							<h2 className="font-bold">User: {username}</h2>
-							<h2 className="font-bold">Room ID: {roomId}</h2>
-							<button className='bg-white text-black p-1 cursor-pointer' onClick={handleExit}>exitRoom</button>
+					<div className="sticky top-0 left-0 w-full z-10 bg-zinc-950 opacity-90 px-2 py-0.5 backdrop-blur">
+						<div className='flex w-full justify-between'>
+							<h1 className='flex items-center p-8'><ChatIcon/></h1>
+							<div className="text-sm text-right p-4 ">
+							<h3 className="font-bold">Username: {username}</h3>
+							<h3 className="font-bold">Room ID: {roomId}</h3>
+							<div className="flex items-center justify-end mt-2">
+								<button 
+									onClick={handleExit}
+									className="flex items-center gap-2 bg-white hover:bg-slate-800 hover:text-white cursor-pointer text-black px-3 py-1 rounded-md transition-colors"
+								>
+									<span className='font-bold'>Exit</span>
+									<ExitIcon />
+								</button>
+							</div>
 						</div>
+						</div>
+						
 					</div>
 
 					{/* message div */}
@@ -140,8 +155,17 @@ function App() {
 									};
 								};
 
-								const { sender, content } = parseMessage(message);
+								const { sender, content } = parseMessage(message.content);
 								const isOwnMessage = sender === username;
+
+								// Format timestamp from server
+								const formatTimestamp = (timestamp: string) => {
+									const date = new Date(timestamp);
+									return date.toLocaleTimeString([], {
+										hour: '2-digit',
+										minute: '2-digit',
+									});
+								};
 
 								return (
 									<div
@@ -175,10 +199,7 @@ function App() {
 											>
 												{sender}
 												<span className="text-xs font-normal text-gray-500 ml-2">
-													{new Date().toLocaleTimeString([], {
-														hour: '2-digit',
-														minute: '2-digit',
-													})}
+													{formatTimestamp(message.timestamp)}
 												</span>
 											</div>
 
