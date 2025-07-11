@@ -31,9 +31,12 @@ const Alert: React.FC<AlertProps> = ({
     const handleClose = () => {
         setIsAnimating(false);
         // Wait for fade out animation before calling onClose
-        setTimeout(() => {
-            onClose();
-        }, 300); // Match the transition duration
+        if(onClose){
+            setTimeout(() => {
+                onClose();
+            }, 300);
+        }
+         // Match the transition duration
     };
 
     if (!isVisible) return null;
