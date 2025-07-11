@@ -42,8 +42,9 @@ export const useSocket = () => {
     //     return session ? JSON.parse(session) : null;
     // };
 
+    const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
 	useEffect(() => {
-		const ws = new WebSocket('ws://localhost:8080');
+		const ws = new WebSocket(WS_URL);
 
 		ws.onopen = () => {
             console.log('WebSocket connection established');
