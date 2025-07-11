@@ -15,7 +15,7 @@ const JoinOrCreateRoom = ({
 }: JoinOrCreateRoomProps) => {
   const [username, setUsername] = useState("");
   const [roomIdInput, setRoomIdInput] = useState("");
-  const [mode, setMode] = useState("join");
+  const [mode, setMode] = useState<"join" | "create">("join");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
